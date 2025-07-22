@@ -3,6 +3,9 @@ const port = 8989;
 
 const app = express();
 
+app.get("/abc",(req , res)=>{
+    res.send("ABC API Calls")
+})
 app.get("/user",(req , res)=>{
     res.send("Get API Calls")
 })
