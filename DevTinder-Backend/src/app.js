@@ -5,31 +5,71 @@ const port = 9898;
 const connectDB = require("./config/databse");
 const User = require("./models/user");
 
-
+// MiddleWare
+app.use(express.json())
 
 // Entering static data in databse
 app.post("/signup", async(req, res)=>{
     
-    const user = new User(
-        {
-        firstName :"Ankit",
-        lastNmae:"Gupta",
-        emailId:"ankit@gmail.com",
-        password:"Ankit@123",
-        age:22,
-        gender:"Male"
+    // -------- Data Saving statically --------------
+    // const user = new User(
+    //     {
+    //     firstName :"Kunal",
+    //     lastNmae:"Gaurav",
+    //     emailId:"kunal@gmail.com", 
+    //     password:"kunal@123",
+    //     age:22,
+    //     gender:"Male"
 
-        }
-    )
-    
+    //     }
+    // )
+    // try{
+    //    await user.save();
+    //    res.send("user data saved succesfully");
+    // }
+    // catch(err){
+    //     res.send("User data didn't save due to this ERR "+ err);
+    // }
+
+    // -------- Data saving dynamically -------------
     try{
-       await user.save();
-       res.send("user data saved succesfully");
+       const data = new User(req.body);
+       await data.save()
+       res.send("Data Saved Succesfully to the database");
     }
     catch(err){
-        res.send("User data didn't save due to this ERR "+ err);
+        res.send("Data didn't saved into the database due to this ERR :" + err)
     }
-    
+   
+})
+
+// USER-API : finding user data by emailID from database
+app.get("/user", async(req,res)=>{
+      const userEmail = req.body.emailId;
+      console.log(userEmail);
+
+      try{
+        const user = await User.find({emailId :userEmail});
+        res.send(user)
+      }
+      catch(err){
+        console.log("Something went wrong");
+      }
+      
+      
+})
+
+// FEED-API : Finding all user data from the data base;
+app.get("/feed",async(req,res)=>{
+    try{
+        const allUserData = await User.find({});
+        console.log(allUserData);
+        res.send(allUserData);
+        
+    }
+    catch(err){
+
+    }
 })
 
 
