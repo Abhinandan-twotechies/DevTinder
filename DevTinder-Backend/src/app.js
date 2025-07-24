@@ -65,13 +65,42 @@ app.get("/feed",async(req,res)=>{
         const allUserData = await User.find({});
         console.log(allUserData);
         res.send(allUserData);
-        
+             
     }
     catch(err){
-
+      console.log("Something went wrong");
     }
 })
 
+// Delete API 
+app.delete("/user" , async(req , res)=>{
+  try{
+    const usertTodelete = req.body._id;
+    console.log(usertTodelete);
+    await User.deleteOne({_id:usertTodelete});
+    res.send("UserDeletd Succesfully")
+  }
+  catch(err){
+    res.status(400).send("User can't be deleted due to this ERR :"+err)
+  }
+  
+})
+
+// Update by PATCH
+app.patch("/user",async(req,res)=>{
+
+  try{
+   const userIDToUpdate = req.body.userId;
+   const dataToUpdate = req.body;
+   await User.findByIdAndUpdate(userIDToUpdate , dataToUpdate);
+   res.send("Userdata updated SuccesFully")
+  }
+  catch(err){
+    res.status(400).send("User can't Updated")
+  }
+  
+
+})
 
 // connecting database 
 connectDB()
