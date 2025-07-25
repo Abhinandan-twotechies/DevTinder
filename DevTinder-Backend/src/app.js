@@ -4,21 +4,46 @@ const app = express();
 const port = 9898;
 const connectDB = require("./config/databse");
 const User = require("./models/user");
-const validateSignupData = require("./utils/validation")
+const validateSignupData = require("./utils/validation");
+const bcrypt = require("bcrypt");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken")
 
 // MiddleWare
 app.use(express.json())
+app.use(cookieParser())
 
+// SIGN-UP API
 app.post("/signup", async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    emailId,
+    password,
+    age,
+    gender
+  } = req.body
   // -------- Data saving dynamically -------------
   try {
 
     // Validation of data
-    // console.log(req.body);
     validateSignupData(req)
 
     // Encrypt the password
-    const data = new User(req.body);
+    const hashPassword = await bcrypt.hash(password, 10);
+    // console.log(hashPassword);
+
+    const user = new User({
+      firstName,
+      lastName,
+      emailId,
+      password: hashPassword,
+      age,
+      gender
+    })
+
+    // console.log(user);
+    const data = new User(user);
     await data.save()
     res.send("Data Saved Succesfully to the database");
   } catch (err) {
@@ -27,10 +52,69 @@ app.post("/signup", async (req, res) => {
 
 })
 
+//LOG-IN API
+app.post('/login', async (req, res) => {
+  try {
+    const { email,password,} = req.body;
+    const user = await User.findOne({emailId: email});
+    // console.log(user.password);
+    if (!user) {
+      throw new Error("Invalid Credentials");
+    }
+    const isPassValid = await bcrypt.compare(password , user.password);
+    
+    if (isPassValid) {
+     // create a JWT Token
+     const token = await jwt.sign({_id:user._id},"Dev@tinder123")
+      console.log(token);
+      
+     // Add the token to cookie and send the cookie as response 
+     res.cookie("token" , token)
+     res.send("Login Succesfully")
+    } else {
+      throw new Error("Invalid Credentials");
+
+    }
+  } catch (err) {
+    res.status(400).send("Invalid Credentials")
+  }
+})
+
+// API t0 get Profile 
+app.get("/profile" ,async (req , res)=>{
+     try{const cookies = req.cookies;
+     const {token} = cookies;
+
+     if(!token){
+      throw new Error("Invalid Token");
+     }
+
+     //validatae my token
+     const decodedMsg = await jwt.verify(token , "Dev@tinder123");
+     const loggedInUser = decodedMsg._id
+    //  console.log("Logged in User is :" + loggedInUser);
+     
+
+     const user = await User.findById(loggedInUser);
+    //  console.log(user);
+
+     if(!user){
+       throw new ERROR("User not found")
+     }
+     
+     res.send(user)
+    }
+    catch(err){
+
+    }
+     
+})
+
+
 // USER-API : finding user data by emailID from database
 app.get("/user", async (req, res) => {
   const userEmail = req.body.emailId;
-  console.log(userEmail);
+  // console.log(userEmail);
 
   try {
     const user = await User.find({
@@ -147,49 +231,3 @@ connectDB()
 
 
 
-
-
-
-// const express = require('express');
-// require('./config/databse');
-// const connectDB = require("./config/databse")
-// const port = 9898;
-// const app = express();
-// // const User = require("./models/user")
-// const User = require("./models/user")
-
-
-// app.post("/signup", async (req, res) => {
-//     const user = new User({
-//         firstName: "Abhinandan",
-//         lastName: "Kumar",
-//         emailId: "abhi@gmail.com",
-//         password: "Abhi@123",
-//         age: "22",
-//         gender: "male"
-//     })
-
-//     try {
-//         await user.save();
-//         res.send("user added succesfully")
-//     }
-//     catch(err){
-//         res.status(400).send("ERR saving in user" + err)
-//     }
-
-
-// })
-
-
-
-
-// // connecting database
-// connectDB()
-//     .then(() => {
-//         console.log("Database Connected succesfully");
-//         app.listen(port, () => [
-//             console.log("Server started at port no : " + port)
-//         ])
-//     }).catch((err) => {
-//         console.log("Database cannot connected due to this ERR :" + err);
-//     })
