@@ -1,27 +1,39 @@
+const User = require("../models/user");
+const jwt = require("jsonwebtoken");
+
 // Handle Auth Middleware for all GET and  POST, ... requests
 const adminAuth = (req, res, next) => {
-    const token = 'sjhdfgjkjfgh';
-    const isAdminAuthorised = token === "sjhdfgjkjfgh";
 
-    if (!isAdminAuthorised){
-        res.status(401).send("Unauthorized Admin Requests ")
-    }
-    else{
-        next();
-    }
-       
+
 };
-const userAuth = (req, res, next) => {
-    const token = 'sjhdfgjkjfgh';
-    const isAdminAuthorised = token === "sjhdfgjkjfgh";
+const userAuth = async (req, res, next) => {
+   try{
+     //Read the token from req cookies 
+    const { token } = req.cookies;
+    console.log(token);
+    
+    if(!token){
+        throw new Error("Invalid Token")
+    }
+    const decodedMsg = await jwt.verify(token, "Dev@tinder123");
+    const loggedInUser = decodedMsg._id
 
-    if (!isAdminAuthorised){
-        res.status(401).send("Unauthorized User Requests ")
+    const user = await User.findById(loggedInUser);
+    console.log(user);
+    
+
+    if (!user) {
+        throw new Error("User not found")
     }
-    else{
-        next();
-    }
-       
+
+    req.user = user;
+    next();
+
+   }
+   catch(err){
+     res.status(400).send("ERROR : "+err.message)
+   }
+
 };
 
 

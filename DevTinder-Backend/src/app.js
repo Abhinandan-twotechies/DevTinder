@@ -7,7 +7,8 @@ const User = require("./models/user");
 const validateSignupData = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken")
+const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middlewares/auth");
 
 // MiddleWare
 app.use(express.json())
@@ -23,6 +24,7 @@ app.post("/signup", async (req, res) => {
     age,
     gender
   } = req.body
+
   // -------- Data saving dynamically -------------
   try {
 
@@ -55,22 +57,22 @@ app.post("/signup", async (req, res) => {
 //LOG-IN API
 app.post('/login', async (req, res) => {
   try {
-    const { email,password,} = req.body;
-    const user = await User.findOne({emailId: email});
+    const { email, password, } = req.body;
+    const user = await User.findOne({ emailId: email });
     // console.log(user.password);
     if (!user) {
       throw new Error("Invalid Credentials");
     }
-    const isPassValid = await bcrypt.compare(password , user.password);
-    
+    const isPassValid = await bcrypt.compare(password, user.password);
+
     if (isPassValid) {
-     // create a JWT Token
-     const token = await jwt.sign({_id:user._id},"Dev@tinder123")
+      // create a JWT Token
+      const token = await jwt.sign({ _id: user._id }, "Dev@tinder123" , {expiresIn:"1d"})
       console.log(token);
-      
-     // Add the token to cookie and send the cookie as response 
-     res.cookie("token" , token)
-     res.send("Login Succesfully")
+
+      // Add the token to cookie and send the cookie as response 
+      res.cookie("token", token)
+      res.send("Login Succesfully")
     } else {
       throw new Error("Invalid Credentials");
 
@@ -80,111 +82,40 @@ app.post('/login', async (req, res) => {
   }
 })
 
-// API t0 get Profile 
-app.get("/profile" ,async (req , res)=>{
-     try{const cookies = req.cookies;
-     const {token} = cookies;
-
-     if(!token){
-      throw new Error("Invalid Token");
-     }
-
-     //validatae my token
-     const decodedMsg = await jwt.verify(token , "Dev@tinder123");
-     const loggedInUser = decodedMsg._id
-    //  console.log("Logged in User is :" + loggedInUser);
-     
-
-     const user = await User.findById(loggedInUser);
-    //  console.log(user);
-
-     if(!user){
-       throw new ERROR("User not found")
-     }
-     
-     res.send(user)
-    }
-    catch(err){
-
-    }
-     
-})
-
-
-// USER-API : finding user data by emailID from database
-app.get("/user", async (req, res) => {
-  const userEmail = req.body.emailId;
-  // console.log(userEmail);
-
+// API to get Profile 
+app.get("/profile", userAuth, async (req, res) => {
   try {
-    const user = await User.find({
-      emailId: userEmail
-    });
+    const user = req.user;
+    if (!user) {
+      throw new ERROR("User not found")
+    }
     res.send(user)
-  } catch (err) {
-    console.log("Something went wrong");
   }
-
-
-})
-
-// FEED-API : Finding all user data from the data base;
-app.get("/feed", async (req, res) => {
-  try {
-    const allUserData = await User.find({});
-    console.log(allUserData);
-    res.send(allUserData);
-
-  } catch (err) {
-    console.log("Something went wrong");
-  }
-})
-
-// Delete API 
-app.delete("/user", async (req, res) => {
-  try {
-
-    const usertTodelete = req.body._id;
-    console.log(usertTodelete);
-    await User.deleteOne({
-      _id: usertTodelete
-    });
-    res.send("UserDeletd Succesfully")
-  } catch (err) {
-    res.status(400).send("User can't be deleted due to this ERR :" + err)
+  catch(err) {
+   res.status(400).send("ERROR: "+err.message);
   }
 
 })
 
-// Update by PATCH
-app.patch("/user/:userId", async (req, res) => {
-  const userIDToUpdate = req.params?.userId;
-  console.log(userIDToUpdate);
+// API to send connection Requests
+app.post("/sendConnectionRequests" ,userAuth, async(req,res)=>{
 
-  const dataToUpdate = req.body;
-
-  try {
-
-    //Sanatizing at API level
-    const ALLOWED_UPDATES = ["about", "gender", "age", "photoUrl"];
-    const isUpdatedAllowed = Object.keys(dataToUpdate).every((k) =>
-      ALLOWED_UPDATES.includes(k)
-    );
-    if (!isUpdatedAllowed) {
-      throw new Error("Update not allowed");
-    }
-
-    const user = await User.findByIdAndUpdate(userIDToUpdate, dataToUpdate, {
-      runValidators: true
-    });
-
-    res.send("Userdata updated SuccesFully")
-  } catch (err) {
-    res.status(400).send("User can't Updated")
-  }
+      const user = req.user;
+      console.log("Sending connection requests");
+      res.send(user.firstName+" is sending requests")
+})
 
 
-});
+
+
+
+
+
+
+
+
+
+
 
 // connecting database 
 connectDB()
@@ -198,6 +129,207 @@ connectDB()
     console.log("Database Didn't connected");
 
   })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// USER-API : finding user data by emailID from database
+//   
+
+// FEED-API : Finding all user data from the data base;
+// app.get("/feed", async (req, res) => {
+//   try {
+//     const allUserData = await User.find({});
+//     console.log(allUserData);
+//     res.send(allUserData);
+
+//   } catch (err) {
+//     console.log("Something went wrong");
+//   }
+// })
+
+// Delete API 
+// app.delete("/user", async (req, res) => {
+//   try {
+
+//     const usertTodelete = req.body._id;
+//     console.log(usertTodelete);
+//     await User.deleteOne({
+//       _id: usertTodelete
+//     });
+//     res.send("UserDeletd Succesfully")
+//   } catch (err) {
+//     res.status(400).send("User can't be deleted due to this ERR :" + err)
+//   }
+
+// })
+
+// Update by PATCH
+// app.patch("/user/:userId", async (req, res) => {
+//   const userIDToUpdate = req.params?.userId;
+//   console.log(userIDToUpdate);
+
+//   const dataToUpdate = req.body;
+
+//   try {
+
+//     //Sanatizing at API level
+//     const ALLOWED_UPDATES = ["about", "gender", "age", "photoUrl"];
+//     const isUpdatedAllowed = Object.keys(dataToUpdate).every((k) =>
+//       ALLOWED_UPDATES.includes(k)
+//     );
+//     if (!isUpdatedAllowed) {
+//       throw new Error("Update not allowed");
+//     }
+
+//     const user = await User.findByIdAndUpdate(userIDToUpdate, dataToUpdate, {
+//       runValidators: true
+//     });
+
+//     res.send("Userdata updated SuccesFully")
+//   } catch (err) {
+//     res.status(400).send("User can't Updated")
+//   }
+
+
+// });
+
+// connecting database 
+// connectDB()
+//   .then(() => {
+//     console.log("Database connected succesfully");
+//     app.listen(port, () => {
+//       console.log("Server started at port no :" + port);
+//     })
+//   })
+//   .catch((err) => {
+//     console.log("Database Didn't connected");
+
+//   })
 
 
 
