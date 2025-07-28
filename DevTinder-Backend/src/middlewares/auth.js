@@ -2,15 +2,12 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 
 // Handle Auth Middleware for all GET and  POST, ... requests
-const adminAuth = (req, res, next) => {
 
-
-};
 const userAuth = async (req, res, next) => {
    try{
      //Read the token from req cookies 
     const { token } = req.cookies;
-    console.log(token);
+    // console.log(token);
     
     if(!token){
         throw new Error("Invalid Token")
@@ -19,7 +16,7 @@ const userAuth = async (req, res, next) => {
     const loggedInUser = decodedMsg._id
 
     const user = await User.findById(loggedInUser);
-    console.log(user);
+    // console.log(user);
     
 
     if (!user) {
@@ -31,13 +28,12 @@ const userAuth = async (req, res, next) => {
 
    }
    catch(err){
-     res.status(400).send("ERROR : "+err.message)
+     res.status(400).send("ERROR : "+ err.message)
    }
 
 };
 
 
 module.exports = {
-    adminAuth,
     userAuth
 }

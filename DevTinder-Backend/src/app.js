@@ -3,114 +3,17 @@ require('./config/databse');
 const app = express();
 const port = 9898;
 const connectDB = require("./config/databse");
-const User = require("./models/user");
-const validateSignupData = require("./utils/validation");
-const bcrypt = require("bcrypt");
 const cookieParser = require("cookie-parser");
-const jwt = require("jsonwebtoken");
-const { userAuth } = require("./middlewares/auth");
+const authRouter = require("./routes/authRoutes")
+const profileRouter = require("./routes/profileRouter");
+const requestRouter = require("./routes/requestRouter");
 
 // MiddleWare
-app.use(express.json())
-app.use(cookieParser())
-
-// SIGN-UP API
-app.post("/signup", async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    emailId,
-    password,
-    age,
-    gender
-  } = req.body
-
-  // -------- Data saving dynamically -------------
-  try {
-
-    // Validation of data
-    validateSignupData(req)
-
-    // Encrypt the password
-    const hashPassword = await bcrypt.hash(password, 10);
-    // console.log(hashPassword);
-
-    const user = new User({
-      firstName,
-      lastName,
-      emailId,
-      password: hashPassword,
-      age,
-      gender
-    })
-
-    // console.log(user);
-    const data = new User(user);
-    await data.save()
-    res.send("Data Saved Succesfully to the database");
-  } catch (err) {
-    res.status(400).send("Data didn't saved into the database due to this ERR :" + err.message)
-  }
-
-})
-
-//LOG-IN API
-app.post('/login', async (req, res) => {
-  try {
-    const { email, password, } = req.body;
-    const user = await User.findOne({ emailId: email });
-    // console.log(user.password);
-    if (!user) {
-      throw new Error("Invalid Credentials");
-    }
-    const isPassValid = await bcrypt.compare(password, user.password);
-
-    if (isPassValid) {
-      // create a JWT Token
-      const token = await jwt.sign({ _id: user._id }, "Dev@tinder123" , {expiresIn:"1d"})
-      console.log(token);
-
-      // Add the token to cookie and send the cookie as response 
-      res.cookie("token", token)
-      res.send("Login Succesfully")
-    } else {
-      throw new Error("Invalid Credentials");
-
-    }
-  } catch (err) {
-    res.status(400).send("Invalid Credentials")
-  }
-})
-
-// API to get Profile 
-app.get("/profile", userAuth, async (req, res) => {
-  try {
-    const user = req.user;
-    if (!user) {
-      throw new ERROR("User not found")
-    }
-    res.send(user)
-  }
-  catch(err) {
-   res.status(400).send("ERROR: "+err.message);
-  }
-
-})
-
-// API to send connection Requests
-app.post("/sendConnectionRequests" ,userAuth, async(req,res)=>{
-
-      const user = req.user;
-      console.log("Sending connection requests");
-      res.send(user.firstName+" is sending requests")
-})
-
-
-
-
-
-
-
+app.use(express.json());
+app.use(cookieParser());
+app.use("/",authRouter)
+app.use("/",profileRouter);
+app.use("/",requestRouter);
 
 
 
@@ -258,7 +161,7 @@ connectDB()
 
 
 // USER-API : finding user data by emailID from database
-//   
+//
 
 // FEED-API : Finding all user data from the data base;
 // app.get("/feed", async (req, res) => {
@@ -272,7 +175,7 @@ connectDB()
 //   }
 // })
 
-// Delete API 
+// Delete API
 // app.delete("/user", async (req, res) => {
 //   try {
 
@@ -318,7 +221,7 @@ connectDB()
 
 // });
 
-// connecting database 
+// connecting database
 // connectDB()
 //   .then(() => {
 //     console.log("Database connected succesfully");
