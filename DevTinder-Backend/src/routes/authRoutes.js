@@ -2,7 +2,8 @@ const express = require("express");
 const authRouter = express.Router();
 const validateSignupData = require("../utils/validation");
 const bcrypt = require("bcrypt");
-const User = require("../models/user")
+const User = require("../models/user");
+const jwt = require("jsonwebtoken");
 
 
 
@@ -53,6 +54,7 @@ authRouter.post('/login', async (req, res) => {
             email,
             password,
         } = req.body;
+
         const user = await User.findOne({
             emailId: email
         });
@@ -63,12 +65,15 @@ authRouter.post('/login', async (req, res) => {
         const isPassValid = await bcrypt.compare(password, user.password);
 
         if (isPassValid) {
+            await User.findByIdAndUpdate(user.id, {
+                last_login: new Date()
+            });
+
             // create a JWT Token
             const token = await user.getJWT();
-            //   console.log(token);
 
             // Add the token to cookie and send the cookie as response 
-            res.cookie("token", token)
+            res.cookie("token", token,{httpOnly:true,secure:true})
             res.send("Login Succesfully")
         } else {
             throw new Error("Invalid Credentials");
@@ -81,13 +86,23 @@ authRouter.post('/login', async (req, res) => {
 
 // LOG-OUT API
 authRouter.post('/logout', async (req, res) => {
+    // const decodedMsg = await jwt.verify(token, "Dev@tinder123");
     try {
+        const {
+            token
+        } = req.cookies;
+        
+        
+        const userId = await jwt.verify(token, "Dev@tinder123")?._id;
+
+        await User.findByIdAndUpdate(userId, {
+            last_login: null
+        });
         res.cookie("token", null, {
             expires: new Date(Date.now()),
         });
         res.send("User Logged Out Succesfully");
-    }
-    catch(err){
+    } catch (err) {
         res.status(400).send("ERROR: " + err.message);
     }
 
